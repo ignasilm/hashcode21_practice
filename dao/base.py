@@ -2,9 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
-import pandas as pd
 
-engine = create_engine('sqlite:///bbdd/pizza.db', connect_args={'timeout': 15})
+
+engine = create_engine('sqlite:///bbdd/pizza2.db', connect_args={'timeout': 15})
 Session = sessionmaker(bind=engine)
 
 Base = declarative_base()

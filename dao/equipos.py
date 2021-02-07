@@ -9,7 +9,6 @@ class Equipo(Base):
     id = Column(Integer, primary_key=True)
     num_pizzas = Column(Integer)
     
-    def __init__(self, id, num_pizzas ):
-        self.id = id
+    def __init__(self, num_pizzas ):
         self.num_pizzas = num_pizzas
     
