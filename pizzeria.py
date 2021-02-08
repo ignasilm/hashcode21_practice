@@ -10,14 +10,14 @@ import querys as q
 #name_data_file = 'data\\a_example'
 #name_data_file = 'data\\b_little_bit_of_everything.in'
 #name_data_file = 'data\\c_many_ingredients.in'
-name_data_file = 'data\\d_many_pizzas.in'
-#name_data_file = 'data\\e_many_teams.in'
+#name_data_file = 'data\\d_many_pizzas.in'
+name_data_file = 'data\\e_many_teams.in'
 
 #name_output_file = 'data\\respuesta_a.txt'
 #name_output_file = 'data\\respuesta_b.txt'
 #name_output_file = 'data\\respuesta_c.txt'
-name_output_file = 'data\\respuesta_d.txt'
-#name_output_file = 'data\\respuesta_e.txt'
+#name_output_file = 'data\\respuesta_d.txt'
+name_output_file = 'data\\respuesta_e.txt'
 
 def inicializar_bbdd():
     print('Iniciamos ejecucion de pizzeria')
@@ -113,14 +113,14 @@ def calcular_mejores_pizzas(num_pizzas, total_ingredientes):
             ids_pizzas = ids_pizzas  + str(val)  + ','
         ids_pizzas = ids_pizzas[:-1]  
         num_ing = q.ingredientes_diferentes(engine.connect(), ids_pizzas)
-        print(ids_pizzas, '-', q.ingredientes_diferentes(engine.connect(), ids_pizzas))
+        #print(ids_pizzas, '-', q.ingredientes_diferentes(engine.connect(), ids_pizzas))
         if num_ing > max_num_ing:
             max_num_ing = num_ing
             max_ids_pizzas = ids_pizzas
         if max_num_ing == total_ingredientes or max_vueltas == 0:
             break
         max_vueltas = max_vueltas - 1
-    print('El maximo de ingredientes es ', max_num_ing, 'con las pizzas', max_ids_pizzas)
+    #print('El maximo de ingredientes es ', max_num_ing, 'con las pizzas', max_ids_pizzas)
     return max_ids_pizzas
 
 def generar_salida():
@@ -155,6 +155,7 @@ crear_equipos(cabecera)
 session = Session()
 total_ingredientes = q.total_ingredientes(engine.connect())
 lista_equipos = q.listado_equipos(engine.connect())
+procesados = 0
 
 for id_equipo, num_pizzas in lista_equipos:
 
@@ -167,5 +168,9 @@ for id_equipo, num_pizzas in lista_equipos:
             registro = EquipoPizza(id_equipo, id_pizza)
             session.add(registro)
             session.commit()
+
+    procesados = procesados + 1
+    if procesados % 500 == 0:
+        print('Se han procesado',procesados, 'de', len(lista_equipos))
 
 generar_salida()

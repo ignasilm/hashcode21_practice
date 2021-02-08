@@ -30,7 +30,7 @@ def combinaciones_pizzas(con, num_pizzas):
     #sql_select = sql_select + ' order by random() ;'
     sql_select = sql_select + ' ;'
     
-    print(sql_select)
+    #print(sql_select)
     query = text(sql_select)
     combinaciones = con.execute(query)
     return combinaciones
