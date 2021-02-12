@@ -170,7 +170,7 @@ for id_equipo, num_pizzas in lista_equipos:
             session.commit()
 
     procesados = procesados + 1
-    if procesados % 500 == 0:
+    if procesados % 100 == 0:
         print('Se han procesado',procesados, 'de', len(lista_equipos))
 
 generar_salida()
