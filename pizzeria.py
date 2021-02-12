@@ -6,99 +6,36 @@ from dao.pizza_ing import PizzaIng
 from dao.equipo_pizza import EquipoPizza
 from dao.equipos import Equipo
 import querys as q
+import numpy as np
 
-#name_data_file = 'data\\a_example'
-#name_data_file = 'data\\b_little_bit_of_everything.in'
-#name_data_file = 'data\\c_many_ingredients.in'
-#name_data_file = 'data\\d_many_pizzas.in'
-name_data_file = 'data\\e_many_teams.in'
+caso = 'a'
 
-#name_output_file = 'data\\respuesta_a.txt'
-#name_output_file = 'data\\respuesta_b.txt'
-#name_output_file = 'data\\respuesta_c.txt'
-#name_output_file = 'data\\respuesta_d.txt'
-name_output_file = 'data\\respuesta_e.txt'
+   
 
-def inicializar_bbdd():
-    print('Iniciamos ejecucion de pizzeria')
-
-    Base.metadata.create_all(engine)
-
-    #Borramos todos los datos de las tablas
+def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
     session = Session()
-    borrar_todo(engine.connect())
-    session.commit()
-    session.close()
-
-    
-
-def cargar_datos():
-    datafile = open(name_data_file, 'r')
-
-    cabecera = datafile.readline().split()
-    print('Numero total de pizzas',cabecera[0])
-
-    session = Session()
-    num_pizza = 0
-    for pizza_line in datafile.readlines():
-        pizza = pizza_line.split()
-        #print('La pizza',num_pizza,' tiene ',pizza[0], ' ingredientes:', pizza[1:])
-
-        registro_pizza = Pizza(num_pizza, pizza[0])
-        session.add(registro_pizza)
-        for ingrediente in pizza[1:]:
-            #Comprobamos si ya tenemos el ingrediente o es nuevo
-            registro_ing = session.query(Ingrediente).filter(Ingrediente.ingrediente == ingrediente).first()
-            if registro_ing is not None:
-                pass
-                #print('Ingrediente ya existe:',registro_ing.ingrediente, '-',registro_ing.id)
-            else:
-                registro_ing = Ingrediente(ingrediente)
-                session.add(registro_ing)
-                registro_ing = session.query(Ingrediente).filter(Ingrediente.ingrediente == ingrediente).first()
-                #print('Nuevo ingrediente insertado:',registro_ing.ingrediente, '-',registro_ing.id)
-
-            registro_pizza_ing = PizzaIng(registro_pizza.id, registro_ing.id)
-            session.add(registro_pizza_ing)
-        
-        num_pizza = num_pizza + 1
-        if num_pizza % 500 == 0:
-            session.commit()
-            print('Se han cargado ',num_pizza, ' pizzas')
-    
-    session.commit()
-    session.close()
-
-    return cabecera
-
-def crear_equipos(cabecera):
-    session = Session()
-    total_pizzas = int(cabecera[0])
     pizzas_restantes = total_pizzas
+    equipos = []
 
-    for t in range(int(cabecera[3])):
+    for t in range(nEq4):
         if (pizzas_restantes - 4) > 4 or (pizzas_restantes - 4) == 0 \
-            or ((pizzas_restantes - 4) == 3 and int(cabecera[2]) > 0) \
-            or ((pizzas_restantes - 4) == 2 and int(cabecera[1]) > 0):
-            registro_pizza = Equipo(4)
-            session.add(registro_pizza)
+            or ((pizzas_restantes - 4) == 3 and int(nEq3) > 0) \
+            or ((pizzas_restantes - 4) == 2 and int(nEq2) > 0):
+            equipos.append(4)
             pizzas_restantes = pizzas_restantes - 4
 
-    for t in range(int(cabecera[2])):
+    for t in range(nEq3):
         if (pizzas_restantes - 3) > 3 or (pizzas_restantes - 3) == 0 \
-            or ((pizzas_restantes - 3) == 2 and int(cabecera[1]) > 0):
-            registro_pizza = Equipo(3)
-            session.add(registro_pizza)
+            or ((pizzas_restantes - 3) == 2 and int(nEq2) > 0):
+            equipos.append(3)
             pizzas_restantes = pizzas_restantes - 3
 
-    for t in range(int(cabecera[1])):
+    for t in range(nEq2):
         if (pizzas_restantes - 2) > 2 or (pizzas_restantes - 2) == 0:
-            registro_pizza = Equipo(2)
-            session.add(registro_pizza)
+            equipos.append(2)
             pizzas_restantes = pizzas_restantes - 2
-
-    session.commit()
-    session.close()
+    
+    return equipos
 
 
 
@@ -140,16 +77,60 @@ def generar_salida():
     
 
 
-#Limpiamos la BBDD de ejecuciones anteriores
-inicializar_bbdd()
 
 #Leemos el fichero para cargarlo en BBDD y devuelve los datos de la cabecera
-cabecera  = cargar_datos()
-total_pizzas = cabecera[0]
-pizzas_restantes = total_pizzas
+if caso == 'a':
+    name_data_file = 'data\\a_example'
+    name_output_file = 'data\\respuesta_a.txt'
+elif caso == 'b':
+    name_data_file = 'data\\b_little_bit_of_everything.in'
+    name_output_file = 'data\\respuesta_b.txt'
+elif caso == 'c':
+    name_data_file = 'data\\c_many_ingredients.in'
+    name_output_file = 'data\\respuesta_c.txt'
+elif caso == 'd':
+    name_data_file = 'data\\d_many_pizzas.in'
+    name_output_file = 'data\\respuesta_d.txt'
+elif caso == 'e':
+    name_data_file = 'data\\e_many_teams.in'
+    name_output_file = 'data\\respuesta_e.txt'
+
+datafile = open(name_data_file, 'r')
+
+#Declaramos variables para leer total de pizzas y total de cada tipo de equipo
+nPizzas=0
+nEq2=0
+nEq3=0
+nEq4=0
+# Leemos numero pizzas, equipos de 2, 3 y 4 miembros
+nPizzas, nEq2, nEq3, nEq4= map(int, datafile.readline().split())
+#Declaramos una lista con las pizzas que leeremos
+pizzas = []
+print('Numero total de pizzas',nPizzas)
+
+# Leemos todas las pizzas. Las metemos en una lista cada una, ignorando el primer elemento
+# El motivo de ignorar el primer elemento, es que nos dice cuantos ingredientes son, pero por 
+# ahorrar espacio no lo metemos y siempre podemos calcular con la funcion "len"
+num_pizza = 0
+ingredientes = dict()
+for pizza_line in datafile.readlines():
+    pizza = pizza_line.split()[1:]
+    pizzas.append(pizza)
+    print('La pizza',num_pizza,' tiene ',len(pizza), ' ingredientes:', pizza)
+
+    for ingrediente in pizza:
+        #Comprobamos si ya tenemos el ingrediente o es nuevo
+        if ingrediente not in ingredientes:
+            ingredientes[ingrediente] = len(ingredientes)
+
+    num_pizza = num_pizza + 1
+    if num_pizza % 500 == 0:
+        print('Se han cargado ',num_pizza, ' pizzas')
 
 #Se crean en BBDD los equipos a partir de la cabecera
-crear_equipos(cabecera)
+crear_equipos(nPizzas, nEq2, nEq3, nEq4)
+
+exit(0)
 
 #recorremos los equipos para calcular sus pizzas
 session = Session()

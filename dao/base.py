@@ -4,7 +4,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
 
-engine = create_engine('sqlite:///bbdd/pizza2.db', connect_args={'timeout': 15})
+#engine = create_engine('sqlite:///bbdd/pizza_b.db', connect_args={'timeout': 15})
+engine = create_engine('sqlite://')
+
 Session = sessionmaker(bind=engine)
 
 Base = declarative_base()
