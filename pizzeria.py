@@ -7,13 +7,12 @@ from dao.equipo_pizza import EquipoPizza
 from dao.equipos import Equipo
 import querys as q
 import numpy as np
+import pandas as pd
 
-caso = 'a'
+caso = 'b'
 
-   
 
 def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
-    session = Session()
     pizzas_restantes = total_pizzas
     equipos = []
 
@@ -34,22 +33,41 @@ def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
         if (pizzas_restantes - 2) > 2 or (pizzas_restantes - 2) == 0:
             equipos.append(2)
             pizzas_restantes = pizzas_restantes - 2
-    
+
+    equipos.sort()
+
     return equipos
 
 
 
-def calcular_mejores_pizzas(num_pizzas, total_ingredientes):
-    combinaciones = q.combinaciones_pizzas(engine.connect(), num_pizzas)
+def calcular_mejores_pizzas(num_pizzas, total_ingredientes, df_pizzas):
+
+    #ordeno las pizzas por numero de ingredientes
+    #df_pizzas = df_pizzas.sort_values(by=[0], ascending=False)
+    #print(df_pizzas.head())
+
+    if num_pizzas == 2:
+        ingredientes_pz1 = df_pizzas.iloc[0,1]
+    
+        idx1 = df_pizzas.iloc[0,0]
+
+        df_sublista = df_pizzas.loc[df_pizzas['num_ing'] < ingredientes_pz1]
+
+
+    #Cojo dos filas para combinar cuantos ingredientes tienen entre las dos
+    df_sel = df_pizzas.loc[(df_pizzas['id_pizza'] == idx1) | (df_pizzas['id_pizza'] == 0)]
+
+    print('Total ingredientes entre las pizzas',sum(df_sel.max()[2:]))
+
+
     max_num_ing = 0
     max_ids_pizzas = None
     max_vueltas = 100
-    for row in combinaciones:
+    for index, row in df_sublista.iterrows(): #darle la vuelta a df_sublista
         ids_pizzas = ''
-        for val in row.values():
-            ids_pizzas = ids_pizzas  + str(val)  + ','
-        ids_pizzas = ids_pizzas[:-1]  
-        num_ing = q.ingredientes_diferentes(engine.connect(), ids_pizzas)
+        df_sel = df_pizzas.loc[(df_pizzas['id_pizza'] == idx1) | (df_pizzas['id_pizza'] == index)]
+        ids_pizzas = df_sel.index
+        num_ing = sum(df_sel.max()[2:])
         #print(ids_pizzas, '-', q.ingredientes_diferentes(engine.connect(), ids_pizzas))
         if num_ing > max_num_ing:
             max_num_ing = num_ing
@@ -57,21 +75,18 @@ def calcular_mejores_pizzas(num_pizzas, total_ingredientes):
         if max_num_ing == total_ingredientes or max_vueltas == 0:
             break
         max_vueltas = max_vueltas - 1
+    
+    
     #print('El maximo de ingredientes es ', max_num_ing, 'con las pizzas', max_ids_pizzas)
     return max_ids_pizzas
 
-def generar_salida():
+def generar_salida(lista_equipo_salida):
     output_file = open(name_output_file, 'w')
 
-    lista_equipo_salida = q.lista_equipo_salida(engine.connect())
     output_file.write(str(len(lista_equipo_salida)) + '\n')
 
     for equipo in lista_equipo_salida:
-        lista_pizzas = q.lista_pizzas_equipo_salida(engine.connect(), equipo)
-        linea = str(len(lista_pizzas))
-        for pizza in lista_pizzas:
-            linea = linea + ' ' + str(pizza)
-        output_file.write(linea + '\n')
+        output_file.write(equipo + '\n')
 
 
     
@@ -106,6 +121,7 @@ nEq4=0
 nPizzas, nEq2, nEq3, nEq4= map(int, datafile.readline().split())
 #Declaramos una lista con las pizzas que leeremos
 pizzas = []
+pizzas_ing = []
 print('Numero total de pizzas',nPizzas)
 
 # Leemos todas las pizzas. Las metemos en una lista cada una, ignorando el primer elemento
@@ -114,44 +130,72 @@ print('Numero total de pizzas',nPizzas)
 num_pizza = 0
 ingredientes = dict()
 for pizza_line in datafile.readlines():
-    pizza = pizza_line.split()[1:]
-    pizzas.append(pizza)
-    print('La pizza',num_pizza,' tiene ',len(pizza), ' ingredientes:', pizza)
+    pizza = pizza_line.split()
+    pizzas_ing.append(pizza[1:])
+    pizzas.append(int(pizza[0]))
+    #print('La pizza',num_pizza,' tiene ',len(pizza), ' ingredientes:', pizza)
 
-    for ingrediente in pizza:
+    for ingrediente in pizza[1:]:
         #Comprobamos si ya tenemos el ingrediente o es nuevo
         if ingrediente not in ingredientes:
+            print(ingrediente, len(ingredientes), 'en pizza',num_pizza, 'con este contenido',pizza[1:])
             ingredientes[ingrediente] = len(ingredientes)
 
     num_pizza = num_pizza + 1
     if num_pizza % 500 == 0:
-        print('Se han cargado ',num_pizza, ' pizzas')
+        pass
+        #print('Se han cargado ',num_pizza, ' pizzas')
 
-#Se crean en BBDD los equipos a partir de la cabecera
-crear_equipos(nPizzas, nEq2, nEq3, nEq4)
+print('Total de ingredientes entre todas las pizzas',len(ingredientes))
 
-exit(0)
+print('Lista de ingredientes',ingredientes)
+
+#Preparo un DataFranme con todas las pizzas y sus ingredientes por columnas
+df_pizzas = pd.DataFrame(pizzas, columns=['num_ing'])
+for ing in ingredientes.keys():
+    df_pizzas[ing] = 0
+print(df_pizzas.head())
+for i in range(len(df_pizzas)):
+    for ing in pizzas_ing[i]:
+        df_pizzas.loc[i,ing]=1
+
+
+
+#ordeno las pizzas por numero de ingredientes
+df_pizzas.sort_values(by=['num_ing'], ascending=False, inplace= True)
+
+#guardo el indice como columna
+df_pizzas.reset_index(inplace=True)
+df_pizzas = df_pizzas.rename(columns = {'index':'id_pizza'})
+
+print(df_pizzas.head())
+print(df_pizzas.dtypes)
+
+#Se crean los equipos a partir de la cabecera
+lista_equipos = crear_equipos(nPizzas, nEq2, nEq3, nEq4)
 
 #recorremos los equipos para calcular sus pizzas
-session = Session()
-total_ingredientes = q.total_ingredientes(engine.connect())
-lista_equipos = q.listado_equipos(engine.connect())
+total_ingredientes = len(ingredientes)
 procesados = 0
+equipos_salida = []
 
-for id_equipo, num_pizzas in lista_equipos:
+for num_pizzas in lista_equipos:
 
     #Calculamos las mejor combinacion de pizzas para el equipo 
-    ids_pizzas = calcular_mejores_pizzas(num_pizzas, total_ingredientes)
+    ids_pizzas = calcular_mejores_pizzas(num_pizzas, total_ingredientes, df_pizzas)
 
+    lista_pizzas = ''
     if ids_pizzas is not None:
         #Asignamos las pizzas al equipo
-        for id_pizza in ids_pizzas.split(','):
-            registro = EquipoPizza(id_equipo, id_pizza)
-            session.add(registro)
-            session.commit()
+        for id_pizza in ids_pizzas:
+            lista_pizzas = lista_pizzas + ' ' + str(id_pizza)
+            #eliminamos las pizzas seleccionadas
+            df_pizzas.drop(index=id_pizza, inplace=True)
+
+    equipos_salida.append(str(num_pizzas) + lista_pizzas)
 
     procesados = procesados + 1
     if procesados % 100 == 0:
         print('Se han procesado',procesados, 'de', len(lista_equipos))
 
-generar_salida()
+generar_salida(equipos_salida)
