@@ -9,7 +9,7 @@ import querys as q
 import numpy as np
 import pandas as pd
 
-caso = 'b'
+caso = 'c'
 
 
 def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
@@ -46,27 +46,36 @@ def calcular_mejores_pizzas(num_pizzas, total_ingredientes, df_pizzas):
     #df_pizzas = df_pizzas.sort_values(by=[0], ascending=False)
     #print(df_pizzas.head())
 
-    if num_pizzas == 2:
-        ingredientes_pz1 = df_pizzas.iloc[0,1]
-    
-        idx1 = df_pizzas.iloc[0,0]
-
-        df_sublista = df_pizzas.loc[df_pizzas['num_ing'] < ingredientes_pz1]
-
-
-    #Cojo dos filas para combinar cuantos ingredientes tienen entre las dos
-    df_sel = df_pizzas.loc[(df_pizzas['id_pizza'] == idx1) | (df_pizzas['id_pizza'] == 0)]
-
-    print('Total ingredientes entre las pizzas',sum(df_sel.max()[2:]))
+    #Recogemos el numero de ingredientes del primer elemento
+    ingredientes_pz1 = df_pizzas.iloc[0,1]
+    #Guardamos el ID del primer elemento
+    idx1 = df_pizzas.iloc[0,0]
+    indices = []
+    indices.append(idx1)
+    #Preparamos lista sin la pizza escogida
+    df_sublista = df_pizzas.loc[df_pizzas['id_pizza'] != idx1]
+    #la ordenamos al reves
+    df_sublista.sort_values(by=['num_ing'], ascending=True, inplace= True)
+    if num_pizzas >= 3:
+        idx2 = df_sublista.iloc[0,0]
+        df_sublista = df_sublista.loc[df_pizzas['id_pizza'] != idx2]
+        indices.append(idx2)
+    if num_pizzas == 4:
+        idx3 = df_sublista.iloc[0,0]
+        df_sublista = df_sublista.loc[df_pizzas['id_pizza'] != idx3]
+        indices.append(idx3)
 
 
     max_num_ing = 0
     max_ids_pizzas = None
     max_vueltas = 100
-    for index, row in df_sublista.iterrows(): #darle la vuelta a df_sublista
+    for index, row in df_sublista.iterrows():
+        indices_selec = indices.copy()
+        indices_selec.append(row.id_pizza)
         ids_pizzas = ''
-        df_sel = df_pizzas.loc[(df_pizzas['id_pizza'] == idx1) | (df_pizzas['id_pizza'] == index)]
-        ids_pizzas = df_sel.index
+        #df_sel = df_pizzas.loc[(df_pizzas['id_pizza'] == idx1) | (df_pizzas['id_pizza'] == row.id_pizza)]
+        df_sel = df_pizzas[df_pizzas.id_pizza.isin(indices_selec)]
+        ids_pizzas = df_sel['id_pizza']
         num_ing = sum(df_sel.max()[2:])
         #print(ids_pizzas, '-', q.ingredientes_diferentes(engine.connect(), ids_pizzas))
         if num_ing > max_num_ing:
@@ -138,7 +147,7 @@ for pizza_line in datafile.readlines():
     for ingrediente in pizza[1:]:
         #Comprobamos si ya tenemos el ingrediente o es nuevo
         if ingrediente not in ingredientes:
-            print(ingrediente, len(ingredientes), 'en pizza',num_pizza, 'con este contenido',pizza[1:])
+            #print(ingrediente, len(ingredientes), 'en pizza',num_pizza, 'con este contenido',pizza[1:])
             ingredientes[ingrediente] = len(ingredientes)
 
     num_pizza = num_pizza + 1
@@ -148,13 +157,13 @@ for pizza_line in datafile.readlines():
 
 print('Total de ingredientes entre todas las pizzas',len(ingredientes))
 
-print('Lista de ingredientes',ingredientes)
+#print('Lista de ingredientes',ingredientes)
 
 #Preparo un DataFranme con todas las pizzas y sus ingredientes por columnas
 df_pizzas = pd.DataFrame(pizzas, columns=['num_ing'])
 for ing in ingredientes.keys():
     df_pizzas[ing] = 0
-print(df_pizzas.head())
+#print(df_pizzas.head())
 for i in range(len(df_pizzas)):
     for ing in pizzas_ing[i]:
         df_pizzas.loc[i,ing]=1
@@ -168,8 +177,8 @@ df_pizzas.sort_values(by=['num_ing'], ascending=False, inplace= True)
 df_pizzas.reset_index(inplace=True)
 df_pizzas = df_pizzas.rename(columns = {'index':'id_pizza'})
 
-print(df_pizzas.head())
-print(df_pizzas.dtypes)
+#print(df_pizzas.head())
+#print(df_pizzas.dtypes)
 
 #Se crean los equipos a partir de la cabecera
 lista_equipos = crear_equipos(nPizzas, nEq2, nEq3, nEq4)
@@ -187,10 +196,11 @@ for num_pizzas in lista_equipos:
     lista_pizzas = ''
     if ids_pizzas is not None:
         #Asignamos las pizzas al equipo
+        #for id_pizza in ids_pizzas:
         for id_pizza in ids_pizzas:
             lista_pizzas = lista_pizzas + ' ' + str(id_pizza)
             #eliminamos las pizzas seleccionadas
-            df_pizzas.drop(index=id_pizza, inplace=True)
+            df_pizzas = df_pizzas[df_pizzas['id_pizza'] != id_pizza]
 
     equipos_salida.append(str(num_pizzas) + lista_pizzas)
 
