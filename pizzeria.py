@@ -9,10 +9,10 @@ import querys as q
 import numpy as np
 import pandas as pd
 
-caso = 'd'
+caso = 'e'
 
 
-def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
+def crear_equipos2(total_pizzas, nEq2, nEq3, nEq4):
     pizzas_restantes = total_pizzas
     equipos = []
 
@@ -38,6 +38,30 @@ def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
 
     return equipos
 
+def crear_equipos(total_pizzas, nEq2, nEq3, nEq4):
+    pizzas_restantes = total_pizzas
+    equipos = []
+
+    for n in range(nEq4+nEq3+nEq2):
+        if nEq4>0 and ((pizzas_restantes - 4) > 4 or (pizzas_restantes - 4) == 0 \
+            or ((pizzas_restantes - 4) == 3 and int(nEq3) > 0) \
+            or ((pizzas_restantes - 4) == 2 and int(nEq2) > 0)):
+            equipos.append(4)
+            pizzas_restantes = pizzas_restantes - 4
+            nEq4 = nEq4 -1
+
+        if nEq3>0 and ((pizzas_restantes - 3) > 3 or (pizzas_restantes - 3) == 0 \
+            or ((pizzas_restantes - 3) == 2 and int(nEq2) > 0)):
+            equipos.append(3)
+            pizzas_restantes = pizzas_restantes - 3
+            nEq3 = nEq3 -1
+
+        if nEq2>0 and ((pizzas_restantes - 2) > 2 or (pizzas_restantes - 2) == 0):
+            equipos.append(2)
+            pizzas_restantes = pizzas_restantes - 2
+            nEq2 = nEq2 -1
+
+    return equipos
 
 
 def calcular_mejores_pizzas(num_pizzas, total_ingredientes, df_pizzas):
@@ -52,10 +76,10 @@ def calcular_mejores_pizzas(num_pizzas, total_ingredientes, df_pizzas):
     idx1 = df_pizzas.iloc[0,0]
     indices = []
     indices.append(idx1)
-    #Preparamos lista sin la pizza escogida
-    df_sublista = df_pizzas.loc[df_pizzas['id_pizza'] != idx1]
+    #Preparamos lista sin la pizza escogida y la ordenamos al reves
+    df_sublista = df_pizzas.loc[df_pizzas['id_pizza'] != idx1].sort_values(by=['num_ing'], ascending=True)
     #la ordenamos al reves
-    df_sublista.sort_values(by=['num_ing'], ascending=True, inplace= True)
+    #df_sublista.sort_values(by=['num_ing'], ascending=True, inplace= True)
     if num_pizzas >= 3:
         idx2 = df_sublista.iloc[0,0]
         df_sublista = df_sublista.loc[df_pizzas['id_pizza'] != idx2]
