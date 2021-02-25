@@ -9,7 +9,7 @@ import querys as q
 import numpy as np
 import pandas as pd
 
-caso = 'e'
+caso = 'c'
 
 
 def crear_equipos2(total_pizzas, nEq2, nEq3, nEq4):
